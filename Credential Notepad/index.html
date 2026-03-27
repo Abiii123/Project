@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Credential Notepad</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --panel: #fffdf8;
+      --accent: #1f5c4a;
+      --accent-soft: #dbe9e3;
+      --text: #1b1b1b;
+      --muted: #5f665f;
+      --border: #d7d1c7;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    .app {
+      width: min(1220px, 100%);
+    }
+
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    button {
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 0.96rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      opacity: 0.95;
+    }
+
+    button.secondary {
+      background: transparent;
+      color: var(--accent);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .board {
+      display: grid;
+      gap: 18px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .left-panel {
+      min-width: 0;
+    }
+
+    .play-area {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(31, 92, 74, 0.06);
+      position: sticky;
+      top: 24px;
+    }
+
+    .play-area h2 {
+      margin: 0 0 8px;
+      font-size: 1.08rem;
+      letter-spacing: 0.02em;
+    }
+
+    .play-area p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .play-area-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .play-tools {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      background: #fcfaf5;
+      text-align: center;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .drop-zone.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .drop-zone strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.98rem;
+    }
+
+    .drop-zone span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .upload-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .upload-row input[type="file"] {
+      display: none;
+    }
+
+    .image-preview {
+      display: none;
+      width: 100%;
+      max-height: 220px;
+      object-fit: contain;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .image-preview.visible {
+      display: block;
+    }
+
+    .helper-text {
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(31, 92, 74, 0.06);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .fields {
+      display: grid;
+      gap: 14px;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      font-size: 0.93rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    input {
+      width: 100%;
+      padding: 13px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      font: inherit;
+      color: var(--text);
+      outline: none;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 620px;
+      resize: vertical;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      font: inherit;
+      color: var(--text);
+      line-height: 1.55;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(31, 92, 74, 0.12);
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(31, 92, 74, 0.12);
+    }
+
+    .status {
+      min-height: 20px;
+      margin-top: 14px;
+      color: var(--accent);
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .page-status {
+      min-height: 22px;
+      margin: 0 0 18px;
+      color: var(--accent);
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+
+    @media (max-width: 640px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .play-area {
+        position: static;
+      }
+
+      .card-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .topbar {
+        align-items: stretch;
+      }
+
+      .actions {
+        width: 100%;
+      }
+
+      .actions button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="topbar">
+      <div>
+        <h1>Credential Notepad</h1>
+        <p class="subtitle">Add boxes and keep name, username, and password details in one clean place.</p>
+      </div>
+      <div class="actions">
+        <button id="copyAllButton" class="secondary" type="button">Copy All Boxes</button>
+        <button id="clearAllButton" class="secondary" type="button">Clear All Boxes</button>
+        <button id="addBoxButton" type="button">Add Box</button>
+      </div>
+    </section>
+
+    <div id="pageStatus" class="page-status" aria-live="polite"></div>
+    <section class="workspace">
+      <div class="left-panel">
+        <section id="board" class="board"></section>
+      </div>
+
+      <aside class="play-area">
+        <div class="play-area-header">
+          <h2>Play Area</h2>
+          <button id="clearAreaButton" class="secondary" type="button">Clear Area</button>
+        </div>
+        <div class="play-tools">
+          <div id="dropZone" class="drop-zone">
+            <strong>Extract details from image</strong>
+            <span>Drag and drop an image here, or upload one to detect text and fill a box automatically.</span>
+          </div>
+          <div class="upload-row">
+            <button id="uploadImageButton" class="secondary" type="button">Upload Image</button>
+            <input id="imageUpload" type="file" accept="image/*">
+            <span class="helper-text">Works best with clear screenshots or high-contrast photos.</span>
+          </div>
+          <img id="imagePreview" class="image-preview" alt="Uploaded preview">
+        </div>
+        <p>Use this free space to paste important text, links, notes, or anything else you want to keep nearby.</p>
+        <textarea id="playAreaInput" placeholder="Paste or type anything here..."></textarea>
+      </aside>
+    </section>
+  </main>
+
+  <template id="cardTemplate">
+    <article class="card">
+      <div class="card-header">
+        <div class="card-title"></div>
+        <div class="actions">
+          <button class="secondary delete-button" type="button">Delete Box</button>
+          <button class="secondary clear-button" type="button">Clear Data</button>
+          <button class="secondary copy-button" type="button">Copy Details</button>
+        </div>
+      </div>
+
+      <div class="fields">
+        <label>
+          Name:
+          <input class="name-input" type="text" placeholder="Enter name">
+        </label>
+
+        <label>
+          Username:
+          <input class="username-input" type="text" placeholder="Enter username">
+        </label>
+
+        <label>
+          Password:
+          <input class="password-input" type="password" placeholder="Enter password">
+        </label>
+      </div>
+
+      <div class="status" aria-live="polite"></div>
+    </article>
+  </template>
+
+  <script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script>
+    const board = document.getElementById("board");
+    const addBoxButton = document.getElementById("addBoxButton");
+    const copyAllButton = document.getElementById("copyAllButton");
+    const clearAllButton = document.getElementById("clearAllButton");
+    const clearAreaButton = document.getElementById("clearAreaButton");
+    const imageUpload = document.getElementById("imageUpload");
+    const uploadImageButton = document.getElementById("uploadImageButton");
+    const cardTemplate = document.getElementById("cardTemplate");
+    const pageStatus = document.getElementById("pageStatus");
+    const playAreaInput = document.getElementById("playAreaInput");
+    const dropZone = document.getElementById("dropZone");
+    const imagePreview = document.getElementById("imagePreview");
+    const storageKey = "credential-notepad-boxes";
+    const playAreaStorageKey = "credential-notepad-play-area";
+
+    let boxCount = 0;
+
+    function showStatus(element, message) {
+      element.textContent = message;
+      window.setTimeout(() => {
+        if (element.textContent === message) {
+          element.textContent = "";
+        }
+      }, 1800);
+    }
+
+    function getCards() {
+      return Array.from(board.querySelectorAll(".card"));
+    }
+
+    function saveBoxes() {
+      const boxes = getCards().map((card) => ({
+        name: card.querySelector(".name-input").value,
+        username: card.querySelector(".username-input").value,
+        password: card.querySelector(".password-input").value
+      }));
+
+      localStorage.setItem(storageKey, JSON.stringify(boxes));
+    }
+
+    function updateTitles() {
+      getCards().forEach((card, index) => {
+        card.querySelector(".card-title").textContent = `Box ${index + 1}`;
+      });
+      boxCount = getCards().length;
+    }
+
+    function buildCardText(card) {
+      const name = card.querySelector(".name-input").value.trim();
+      const username = card.querySelector(".username-input").value.trim();
+      const password = card.querySelector(".password-input").value.trim();
+
+      return `Name:${name}\nUsername:${username}\nPassword:${password}`;
+    }
+
+    async function copyDetails(card) {
+      const status = card.querySelector(".status");
+      const text = buildCardText(card);
+
+      try {
+        await navigator.clipboard.writeText(text);
+        showStatus(status, "Copied to clipboard");
+      } catch (error) {
+        showStatus(status, "Copy failed");
+      }
+    }
+
+    async function copyAllDetails() {
+      const cards = getCards();
+      const text = cards.map((card) => buildCardText(card)).join("\n\n");
+
+      try {
+        await navigator.clipboard.writeText(text);
+        showStatus(pageStatus, "All box details copied to clipboard");
+      } catch (error) {
+        showStatus(pageStatus, "Copy failed");
+      }
+    }
+
+    function clearCardData(card) {
+      card.querySelector(".name-input").value = "";
+      card.querySelector(".username-input").value = "";
+      card.querySelector(".password-input").value = "";
+      saveBoxes();
+      showStatus(card.querySelector(".status"), "Box data cleared");
+    }
+
+    function deleteCard(card) {
+      card.remove();
+
+      if (getCards().length === 0) {
+        createBox();
+        showStatus(pageStatus, "Last box deleted, a new empty box was added");
+        return;
+      }
+
+      updateTitles();
+      saveBoxes();
+      showStatus(pageStatus, "Box deleted");
+    }
+
+    function createBox(data = {}) {
+      const cardFragment = cardTemplate.content.cloneNode(true);
+      const card = cardFragment.querySelector(".card");
+      const nameInput = card.querySelector(".name-input");
+      const usernameInput = card.querySelector(".username-input");
+      const passwordInput = card.querySelector(".password-input");
+
+      nameInput.value = data.name || "";
+      usernameInput.value = data.username || "";
+      passwordInput.value = data.password || "";
+
+      [nameInput, usernameInput, passwordInput].forEach((input) => {
+        input.addEventListener("input", saveBoxes);
+      });
+
+      card.querySelector(".copy-button").addEventListener("click", () => copyDetails(card));
+      card.querySelector(".clear-button").addEventListener("click", () => clearCardData(card));
+      card.querySelector(".delete-button").addEventListener("click", () => deleteCard(card));
+
+      board.appendChild(cardFragment);
+      updateTitles();
+      saveBoxes();
+    }
+
+    function clearAllBoxes() {
+      getCards().forEach((card) => {
+        card.querySelector(".name-input").value = "";
+        card.querySelector(".username-input").value = "";
+        card.querySelector(".password-input").value = "";
+        card.querySelector(".status").textContent = "";
+      });
+      saveBoxes();
+      showStatus(pageStatus, "All box data cleared");
+    }
+
+    function restoreBoxes() {
+      const savedBoxes = JSON.parse(localStorage.getItem(storageKey) || "[]");
+
+      if (savedBoxes.length === 0) {
+        createBox();
+        return;
+      }
+
+      savedBoxes.forEach((box) => createBox(box));
+    }
+
+    function savePlayArea() {
+      localStorage.setItem(playAreaStorageKey, playAreaInput.value);
+    }
+
+    function restorePlayArea() {
+      playAreaInput.value = localStorage.getItem(playAreaStorageKey) || "";
+    }
+
+    function clearPlayArea() {
+      playAreaInput.value = "";
+      savePlayArea();
+      showStatus(pageStatus, "Play Area cleared");
+    }
+
+    function appendToPlayArea(text) {
+      if (!text.trim()) {
+        return;
+      }
+
+      playAreaInput.value = playAreaInput.value.trim()
+        ? `${playAreaInput.value}\n\n${text.trim()}`
+        : text.trim();
+      savePlayArea();
+    }
+
+    function normalizeExtractedText(text) {
+      return text
+        .replace(/\r/g, "")
+        .replace(/[|]/g, ":")
+        .replace(/[ \t]+/g, " ")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+    }
+
+    function extractField(lines, labels) {
+      const escapedLabels = labels.join("|");
+
+      for (const line of lines) {
+        const pattern = new RegExp(`^\\s*(?:${escapedLabels})\\s*[:\\-]?\\s*(.+)$`, "i");
+        const match = line.match(pattern);
+        if (match) {
+          return match[1].trim();
+        }
+      }
+
+      return "";
+    }
+
+    function formatStructuredEntry(entry, index) {
+      return [
+        `Entry ${index}`,
+        entry.name ? `Name:${entry.name}` : "",
+        entry.username ? `Username:${entry.username}` : "",
+        entry.password ? `Password:${entry.password}` : ""
+      ].filter(Boolean).join("\n");
+    }
+
+    function cleanEssentialValue(value, type) {
+      const trimmed = value.trim().replace(/\s{2,}/g, " ");
+
+      if (!trimmed) {
+        return "";
+      }
+
+      if (type === "password") {
+        return trimmed.replace(/\s+/g, "");
+      }
+
+      return trimmed;
+    }
+
+    function isLikelyEssentialEntry(entry) {
+      const score =
+        (entry.username ? 2 : 0) +
+        (entry.password ? 2 : 0) +
+        (entry.name ? 1 : 0);
+
+      return score >= 2;
+    }
+
+    function parseCredentialBlock(block) {
+      const lines = block
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      const name = cleanEssentialValue(extractField(lines, ["name", "full name"]), "name");
+      const username = cleanEssentialValue(extractField(lines, ["username", "user name", "user id", "userid", "login", "email", "mail"]), "username");
+      const password = cleanEssentialValue(extractField(lines, ["password", "pass", "pwd", "pin", "passcode"]), "password");
+
+      return {
+        name,
+        username,
+        password,
+        hasAnyField: Boolean(name || username || password)
+      };
+    }
+
+    function extractDetailsFromText(text) {
+      const cleanedText = normalizeExtractedText(text);
+      const blocks = cleanedText
+        .split(/\n\s*\n/)
+        .map((block) => block.trim())
+        .filter(Boolean);
+
+      const entries = blocks
+        .map((block) => parseCredentialBlock(block))
+        .filter((entry) => entry.hasAnyField)
+        .filter((entry) => isLikelyEssentialEntry(entry));
+
+      if (entries.length > 0) {
+        return {
+          entries,
+          structuredText: entries.map((entry, index) => formatStructuredEntry(entry, index + 1)).join("\n\n")
+        };
+      }
+
+      const fallbackEntry = parseCredentialBlock(cleanedText);
+      const fallbackEntries = isLikelyEssentialEntry(fallbackEntry) ? [fallbackEntry] : [];
+
+      return {
+        entries: fallbackEntries,
+        structuredText: fallbackEntries.length > 0 ? formatStructuredEntry(fallbackEntry, 1) : ""
+      };
+    }
+
+    function showPreview(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        imagePreview.src = reader.result;
+        imagePreview.classList.add("visible");
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function processImage(file) {
+      if (!file || !file.type.startsWith("image/")) {
+        showStatus(pageStatus, "Please upload an image file");
+        return;
+      }
+
+      showPreview(file);
+      showStatus(pageStatus, "Reading image and extracting details...");
+
+      try {
+        const result = await Tesseract.recognize(file, "eng");
+        const extracted = extractDetailsFromText(result.data.text || "");
+
+        if (extracted.entries.length > 0) {
+          extracted.entries.forEach((entry) => {
+            createBox({
+              name: entry.name,
+              username: entry.username,
+              password: entry.password
+            });
+          });
+          showStatus(pageStatus, `Structured details extracted into ${extracted.entries.length} box${extracted.entries.length > 1 ? "es" : ""}`);
+        } else {
+          showStatus(pageStatus, "No essential credential details were detected");
+        }
+
+        if (extracted.structuredText) {
+          appendToPlayArea(`Essential Extracted Details\n${extracted.structuredText}`);
+        }
+      } catch (error) {
+        showStatus(pageStatus, "Image extraction failed");
+      } finally {
+        imageUpload.value = "";
+      }
+    }
+
+    function setDropZoneActive(isActive) {
+      dropZone.classList.toggle("active", isActive);
+    }
+
+    addBoxButton.addEventListener("click", createBox);
+    copyAllButton.addEventListener("click", copyAllDetails);
+    clearAllButton.addEventListener("click", clearAllBoxes);
+    clearAreaButton.addEventListener("click", clearPlayArea);
+    playAreaInput.addEventListener("input", savePlayArea);
+    uploadImageButton.addEventListener("click", () => imageUpload.click());
+    imageUpload.addEventListener("change", (event) => processImage(event.target.files[0]));
+    dropZone.addEventListener("dragenter", (event) => {
+      event.preventDefault();
+      setDropZoneActive(true);
+    });
+    dropZone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      setDropZoneActive(true);
+    });
+    dropZone.addEventListener("dragleave", (event) => {
+      event.preventDefault();
+      if (event.target === dropZone) {
+        setDropZoneActive(false);
+      }
+    });
+    dropZone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      setDropZoneActive(false);
+      processImage(event.dataTransfer.files[0]);
+    });
+
+    restoreBoxes();
+    restorePlayArea();
+  </script>
+</body>
+</html>
